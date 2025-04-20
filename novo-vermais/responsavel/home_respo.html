@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OlharMais - Responsável</title>
+    <meta name="description" content="OlharMais - Área do Responsável">
+    <meta name="theme-color" content="#005ae2">
+    
+    <!-- Favicons -->
+    <link rel="icon" href="/favicon/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon.svg">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon.svg">
+    
+    <!-- Fonte Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#005ae2',
+                        'primary-light': '#E6F0FF',
+                        'primary-dark': '#004bc9',
+                        'logo-blue': '#005ae2'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Config -->
+    <script src="/config/supabase.js"></script>
+    
+    <style>
+        body {
+            background: linear-gradient(180deg, #E6F0FF 0%, #FFFFFF 100%);
+            min-height: 100vh;
+        }
+        
+        .logo-olharmais {
+            background: linear-gradient(90deg, #005ae2 0%, #3988ff 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .container {
+            max-width: 992px !important;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        @media (display-mode: standalone) {
+            body {
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+        }
+        
+        /* Ajuste para o navbar mobile */
+        body {
+            padding-bottom: 60px; /* Altura do navbar + margem */
+        }
+        
+        @media (min-width: 768px) {
+            body {
+                padding-bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans">
+    <!-- Header -->
+    <header class="bg-white shadow-sm py-4">
+        <div class="container mx-auto px-4 flex items-center">
+            <h1 class="text-2xl font-bold logo-olharmais">OlharMais</h1>
+            <div class="ml-auto flex items-center gap-4">
+                <a href="notificacoes_respo.html" id="notifications-btn" class="text-gray-600 hover:text-primary transition-colors relative">
+                    <i class="ph ph-bell text-xl"></i>
+                    <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                </a>
+                <a href="cameras_respo.html" class="text-gray-600 hover:text-primary transition-colors">
+                    <i class="ph ph-video-camera text-xl"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- Boas-vindas -->
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Olá, <span id="nome-usuario" class="text-primary">Responsável</span></h2>
+            <p class="text-gray-600">Acompanhe as informações dos seus alunos</p>
+        </div>
+        
+        <!-- Lista de Alunos -->
+        <div id="lista-alunos" class="space-y-6">
+            <!-- Os cards dos alunos serão inseridos aqui via JavaScript -->
+            </div>
+            
+        <!-- Template do Card do Aluno -->
+        <template id="template-aluno">
+            <div class="aluno-card bg-white rounded-lg shadow-sm overflow-hidden">
+                <!-- Informações do Aluno -->
+                <div class="p-6">
+                    <div class="flex items-start gap-4">
+                        <div class="foto-aluno w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                            <!-- Foto será inserida via JavaScript -->
+                        </div>
+                        <div>
+                            <h3 class="nome-aluno text-xl font-bold text-gray-800 mb-1">Carregando...</h3>
+                            <div class="flex flex-wrap gap-2 text-sm">
+                                <span class="escola-aluno bg-primary-light text-primary px-2 py-1 rounded-full">Carregando...</span>
+                                <span class="turma-aluno bg-gray-100 text-gray-700 px-2 py-1 rounded-full">Carregando...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Resumo de Frequência -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 border-t border-gray-100">
+                    <!-- Frequência Mensal -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-gray-800">Frequência Mensal</h3>
+                            <div class="text-sm text-gray-500 mes-atual">Carregando...</div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-full bg-primary-light flex items-center justify-center">
+                                <span class="porcentagem-presenca text-primary text-xl font-bold">0%</span>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                                    <span class="dias-presentes text-sm">0 dias presente</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                                    <span class="dias-ausentes text-sm">0 dias ausente</span>
+                                </div>
+                            </div>
+            </div>
+                    </div>
+                    
+                    <!-- Último Registro -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-semibold text-gray-800 mb-4">Último Registro</h3>
+                        <div class="ultimo-registro">
+                            <div class="flex items-center mb-2">
+                                <i class="ph ph-calendar-check text-primary mr-2"></i>
+                                <span class="data-ultimo-registro text-gray-800">Carregando...</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div class="bg-green-50 rounded p-2">
+                                    <div class="text-green-600 font-medium">Entrada</div>
+                                    <div class="hora-entrada text-gray-800">--:--</div>
+                                </div>
+                                <div class="bg-red-50 rounded p-2">
+                                    <div class="text-red-600 font-medium">Saída</div>
+                                    <div class="hora-saida text-gray-800">--:--</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sem-registro hidden">
+                            <div class="py-4 text-center text-gray-500">
+                                <i class="ph ph-warning-circle text-2xl mb-2"></i>
+                                <p>Nenhum registro encontrado</p>
+                </div>
+            </div>
+            </div>
+        </div>
+        
+        <!-- Ações Rápidas -->
+                <div class="p-6 border-t border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">Ações Rápidas</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <a href="#" class="link-frequencia bg-white rounded-lg p-4 shadow-sm flex items-center">
+                    <div class="w-10 h-10 bg-primary-light rounded-full flex items-center justify-center mr-4">
+                        <i class="ph ph-calendar-check text-xl text-primary"></i>
+                    </div>
+                    <div class="flex-grow">
+                                <h4 class="font-medium text-gray-800">Ver Frequência</h4>
+                                <p class="text-sm text-gray-600">Histórico completo</p>
+                            </div>
+                            <i class="ph ph-caret-right text-gray-400"></i>
+                        </a>
+                        <a href="#" class="link-ficha bg-white rounded-lg p-4 shadow-sm flex items-center">
+                            <div class="w-10 h-10 bg-primary-light rounded-full flex items-center justify-center mr-4">
+                                <i class="ph ph-user text-xl text-primary"></i>
+                            </div>
+                            <div class="flex-grow">
+                                <h4 class="font-medium text-gray-800">Ficha do Aluno</h4>
+                                <p class="text-sm text-gray-600">Informações completas</p>
+                    </div>
+                    <i class="ph ph-caret-right text-gray-400"></i>
+                </a>
+            </div>
+        </div>
+            </div>
+        </template>
+    </main>
+    
+    <!-- Toast Component -->
+    <div id="toast" class="fixed top-4 right-4 z-[9999] hidden">
+        <div class="px-4 py-2 rounded-lg shadow-lg text-white font-medium"></div>
+    </div>
+    
+    <!-- Navbar JavaScript Alternativo -->
+    <script src="botoes_respo.js"></script>
+    
+    <!-- Fallback: iframe com navbar (oculto se JS alternativo funcionar) -->
+    <iframe id="navbar-iframe" src="navbar_respo.html" frameborder="0" scrolling="no" class="w-full fixed bottom-0 left-0 right-0 h-[60px] sm:hidden" allow="*" sandbox="allow-scripts allow-same-origin"></iframe>
+    
+    <script>
+        // Ocultar o iframe se o JS alternativo carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof adicionarBarraNavegacao === 'function') {
+                const iframe = document.getElementById('navbar-iframe');
+                if (iframe) iframe.style.display = 'none';
+            }
+        });
+    
+        // Toast Component
+        const Toast = {
+            element: document.getElementById('toast'),
+            timeoutId: null,
+            
+            show(message, type = 'info') {
+                const colors = {
+                    success: 'bg-green-500',
+                    error: 'bg-red-500',
+                    warning: 'bg-yellow-500',
+                    info: 'bg-blue-500'
+                };
+                
+                clearTimeout(this.timeoutId);
+                
+                const inner = this.element.querySelector('div');
+                inner.className = `px-4 py-2 rounded-lg shadow-lg text-white font-medium ${colors[type]}`;
+                inner.textContent = message;
+                
+                this.element.classList.remove('hidden');
+                
+                this.timeoutId = setTimeout(() => {
+                    this.element.classList.add('hidden');
+                }, 3000);
+            }
+        };
+        
+        // Função para formatar a data
+        function formatarData(data) {
+            return new Date(data).toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+        
+        // Função para formatar hora
+        function formatarHora(data) {
+            return new Date(data).toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // Carregar dados do dashboard
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Verificar se o usuário está logado
+                const userSession = localStorage.getItem('user_session');
+                if (!userSession) {
+                    console.error('Usuário não está logado');
+                    window.location.href = '/auth.html';
+                    return;
+                }
+                
+                const userData = JSON.parse(userSession);
+                
+                // Verificar se o usuário é RESPONSÁVEL
+                if (userData.tipo !== 'RESPONSÁVEL') {
+                    Toast.show('Acesso não autorizado para este perfil', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/auth.html';
+                    }, 2000);
+                    return;
+                }
+                
+                // Inicializar Supabase
+                const supabase = createSupabaseClient();
+                
+                // Buscar alunos associados ao responsável através da tabela permissoes_aluno
+                const { data: permissoes, error: permissoesError } = await supabase
+                    .from('permissoes_aluno')
+                    .select(`
+                        aluno_id,
+                        alunos:aluno_id (
+                            id,
+                            nome_completo,
+                            foto_url,
+                            escola_id,
+                            escola:escola_id (
+                                id,
+                                nome,
+                                cidade_id
+                            ),
+                            serie:serie (
+                                id,
+                                nome
+                            ),
+                            turma:turma (
+                                id,
+                                nome,
+                                periodo
+                            )
+                        )
+                    `)
+                    .eq('usuario_id', userData.id);
+
+                if (permissoesError) {
+                    console.error('Erro ao buscar permissões:', permissoesError);
+                    Toast.show('Erro ao buscar dados dos alunos', 'error');
+                    return;
+                }
+
+                if (!permissoes || permissoes.length === 0) {
+                    console.error('Usuário não tem alunos associados');
+                    Toast.show('Não há alunos associados ao seu cadastro', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/auth.html';
+                    }, 2000);
+                    return;
+                }
+                
+                // Atualizar nome do usuário
+                document.getElementById('nome-usuario').textContent = userData.nome || 'Responsável';
+
+                // Limpar lista de alunos
+                const listaAlunos = document.getElementById('lista-alunos');
+                listaAlunos.innerHTML = '';
+
+                // Template para criar cards de alunos
+                const template = document.getElementById('template-aluno');
+
+                // Para cada aluno, criar um card e carregar seus dados
+                for (const permissao of permissoes) {
+                    const aluno = permissao.alunos;
+                    if (!aluno) continue;
+
+                    // Clonar template
+                    const card = template.content.cloneNode(true);
+
+                    // Preencher dados básicos do aluno
+                    card.querySelector('.nome-aluno').textContent = aluno.nome_completo;
+                    const fotoAluno = card.querySelector('.foto-aluno');
+                    fotoAluno.innerHTML = `
+                        <img src="${aluno.foto_url || '/assets/img/avatar-placeholder.png'}" 
+                             alt="Foto do aluno"
+                             class="w-full h-full object-cover"
+                             onerror="this.src='/assets/img/avatar-placeholder.png'">
+                    `;
+                    card.querySelector('.escola-aluno').textContent = aluno.escola?.nome || 'Escola não informada';
+                    card.querySelector('.turma-aluno').textContent = `${aluno.turma?.nome || 'Turma não informada'} - ${aluno.turma?.periodo || ''}`;
+
+                    // Configurar links das ações
+                    card.querySelector('.link-frequencia').href = `frequencia_respo.html?aluno=${aluno.id}`;
+                    card.querySelector('.link-ficha').href = `ficha_aluno.html?aluno=${aluno.id}`;
+
+                    // Buscar registros de frequência do mês atual
+                    const dataAtual = new Date();
+                    const mesAtual = dataAtual.getMonth() + 1;
+                    const anoAtual = dataAtual.getFullYear();
+                    
+                    const primeiroDiaMes = new Date(anoAtual, mesAtual - 1, 1);
+                    const ultimoDiaMes = new Date(anoAtual, mesAtual, 0);
+                    
+                    const primeiroDiaMesStr = primeiroDiaMes.toISOString().split('T')[0];
+                    const ultimoDiaMesStr = ultimoDiaMes.toISOString().split('T')[0] + 'T23:59:59';
+                    
+                    // Atualizar mês atual
+                    card.querySelector('.mes-atual').textContent = dataAtual.toLocaleDateString('pt-BR', { 
+                        month: 'long', 
+                        year: 'numeric' 
+                    });
+
+                    // Buscar registros de frequência
+                    const { data: registrosMes, error: registrosError } = await supabase
+                        .from('view_alunos_logs')
+                        .select('*')
+                        .eq('nome_aluno', aluno.nome_completo)
+                        .gte('hora_check', primeiroDiaMesStr)
+                        .lte('hora_check', ultimoDiaMesStr)
+                        .order('hora_check', { ascending: false });
+
+                    if (registrosError) {
+                        console.error('Erro ao buscar registros de frequência:', registrosError);
+                        continue;
+                    }
+
+                    // Agrupar registros por dia
+                    const diasComRegistro = new Set();
+                    registrosMes?.forEach(registro => {
+                        const data = new Date(registro.hora_check);
+                        const dataKey = data.toISOString().split('T')[0];
+                        diasComRegistro.add(dataKey);
+                    });
+
+                    // Calcular frequência
+                    const totalDiasUteis = 20;
+                    const diasPresentes = diasComRegistro.size;
+                    const diasAusentes = totalDiasUteis - diasPresentes;
+                    const porcentagemPresenca = Math.round((diasPresentes / totalDiasUteis) * 100);
+
+                    // Atualizar dados de frequência no card
+                    card.querySelector('.porcentagem-presenca').textContent = `${porcentagemPresenca}%`;
+                    card.querySelector('.dias-presentes').textContent = `${diasPresentes} ${diasPresentes === 1 ? 'dia presente' : 'dias presente'}`;
+                    card.querySelector('.dias-ausentes').textContent = `${diasAusentes} ${diasAusentes === 1 ? 'dia ausente' : 'dias ausente'}`;
+
+                    // Verificar se há registros para mostrar o último
+                    if (registrosMes && registrosMes.length > 0) {
+                        const registrosPorDia = {};
+                        registrosMes.forEach(registro => {
+                            const data = new Date(registro.hora_check);
+                            const dataKey = data.toISOString().split('T')[0];
+                            if (!registrosPorDia[dataKey]) {
+                                registrosPorDia[dataKey] = [];
+                            }
+                            registrosPorDia[dataKey].push(registro);
+                        });
+
+                        const diasOrdenados = Object.keys(registrosPorDia).sort().reverse();
+                        const ultimoDia = diasOrdenados[0];
+                        const registrosUltimoDia = registrosPorDia[ultimoDia];
+                        registrosUltimoDia.sort((a, b) => new Date(a.hora_check) - new Date(b.hora_check));
+
+                        const primeiroRegistro = registrosUltimoDia[0];
+                        const ultimoRegistro = registrosUltimoDia[registrosUltimoDia.length - 1];
+
+                        card.querySelector('.data-ultimo-registro').textContent = formatarData(primeiroRegistro.hora_check);
+                        card.querySelector('.hora-entrada').textContent = formatarHora(primeiroRegistro.hora_check);
+
+                        if (ultimoRegistro !== primeiroRegistro) {
+                            card.querySelector('.hora-saida').textContent = formatarHora(ultimoRegistro.hora_check);
+                        }
+
+                        card.querySelector('.ultimo-registro').classList.remove('hidden');
+                        card.querySelector('.sem-registro').classList.add('hidden');
+                    } else {
+                        card.querySelector('.ultimo-registro').classList.add('hidden');
+                        card.querySelector('.sem-registro').classList.remove('hidden');
+                    }
+
+                    // Adicionar card à lista
+                    listaAlunos.appendChild(card);
+                }
+
+            } catch (error) {
+                console.error('Erro ao carregar dashboard:', error);
+                Toast.show('Erro ao carregar dados', 'error');
+            }
+        });
+    </script>
+</body>
+</html> 
