@@ -1,0 +1,205 @@
+<!-- Botões -->
+<div class="flex flex-col gap-3">
+    <button type="submit" 
+            class="h-[54px] bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition-colors flex items-center justify-center gap-2">
+        <span>Publicar Notificação</span>
+        <div class="hidden" id="loading-spinner">
+            <i class="ph ph-spinner loading-spinner"></i>
+        </div>
+    </button>
+    <button type="button" onclick="window.location.href='notificacoes_gestor.html'" 
+            class="h-[54px] border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+        Cancelar
+    </button>
+</div>
+
+<!-- Cabeçalho -->
+<div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Criar Notificação</h2>
+    <p class="text-gray-600">Crie uma nova notificação para <span id="cidade-nome" class="font-medium text-primary"></span></p>
+</div>
+
+<header class="bg-white shadow-sm">
+    <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center">
+            <a href="/gestor/notificacoes_gestor.html" class="text-gray-600 hover:text-gray-800 mr-4">
+                <i class="ph ph-arrow-left text-2xl"></i>
+            </a>
+            <h1 class="text-xl font-semibold text-gray-800">Nova Notificação</h1>
+        </div>
+        <div id="cidadeInfo" class="text-sm text-gray-600"></div>
+    </div>
+</header>
+
+<main class="container mx-auto px-4 py-8">
+    <form id="notificationForm" class="max-w-2xl mx-auto space-y-6" onsubmit="handleSubmit(event)">
+        <!-- Tipo de Mídia -->
+        <div class="grid grid-cols-2 gap-4">
+            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input type="radio" name="mediaType" id="imageOption" class="hidden" checked onchange="handleMediaTypeChange()">
+                <div class="w-full text-center">
+                    <i class="ph ph-image text-2xl text-primary mb-2"></i>
+                    <p class="font-medium">Imagem</p>
+                </div>
+            </label>
+            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input type="radio" name="mediaType" id="videoOption" class="hidden" onchange="handleMediaTypeChange()">
+                <div class="w-full text-center">
+                    <i class="ph ph-youtube-logo text-2xl text-primary mb-2"></i>
+                    <p class="font-medium">Vídeo</p>
+                </div>
+            </label>
+        </div>
+
+        <!-- Inputs -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+                <label for="title" class="block text-sm font-medium text-gray-700">Título</label>
+                <input type="text" id="title" name="title" required class="mt-1 block w-full rounded-md border-gray-300">
+            </div>
+            <div class="col-span-2">
+                <label for="description" class="block text-sm font-medium text-gray-700">Descrição</label>
+                <textarea id="description" name="description" required class="mt-1 block w-full rounded-md border-gray-300"></textarea>
+            </div>
+            <div class="col-span-2">
+                <label for="imageInput" class="block text-sm font-medium text-gray-700">Imagem</label>
+                <input type="file" id="imageInput" class="mt-1 block w-full rounded-md border-gray-300">
+            </div>
+            <div class="col-span-2">
+                <label for="videoUrl" class="block text-sm font-medium text-gray-700">URL do Vídeo</label>
+                <input type="text" id="videoUrl" name="videoUrl" class="mt-1 block w-full rounded-md border-gray-300">
+            </div>
+        </div>
+    </form>
+</main>
+
+async function uploadImage(file) {
+    try {
+        const timestamp = new Date().getTime();
+        const fileName = `notificacoes/${timestamp}_${file.name}`;
+        const { data, error } = await supabase.storage
+            .from('profile-photos')
+            .upload(fileName, file);
+
+        if (error) {
+            console.error('Erro ao fazer upload:', error);
+            showToast('Erro ao fazer upload da imagem. Tente novamente.', 'error');
+            return null;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('profile-photos')
+            .getPublicUrl(fileName);
+
+        return publicUrl;
+    } catch (error) {
+        console.error('Erro ao fazer upload:', error);
+        showToast('Erro ao fazer upload da imagem. Tente novamente.', 'error');
+        return null;
+    }
+}
+
+async function handleSubmit(event) {
+    event.preventDefault();
+    const submitButton = document.getElementById('submitButton');
+    submitButton.disabled = true;
+    submitButton.innerHTML = `
+        <div class="animate-spin h-5 w-5 mr-2 border-t-2 border-b-2 border-white rounded-full"></div>
+        Publicando...
+    `;
+
+    try {
+        let mediaUrl = '';
+        const title = document.getElementById('title').value;
+        const description = document.getElementById('description').value;
+        const isImage = document.getElementById('imageOption').checked;
+
+        if (!title || !description) {
+            showToast('Por favor, preencha todos os campos obrigatórios.', 'error');
+            return;
+        }
+
+        if (isImage) {
+            const fileInput = document.getElementById('imageInput');
+            if (!fileInput.files || !fileInput.files[0]) {
+                showToast('Por favor, selecione uma imagem.', 'error');
+                return;
+            }
+            mediaUrl = await uploadImage(fileInput.files[0]);
+            if (!mediaUrl) return;
+        } else {
+            mediaUrl = document.getElementById('videoUrl').value;
+            if (!mediaUrl) {
+                showToast('Por favor, insira a URL do vídeo.', 'error');
+                return;
+            }
+        }
+
+        // Obter o ID da cidade do usuário logado
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: userData, error: userError } = await supabase
+            .from('usuarios')
+            .select('cidade')
+            .eq('id', user.id)
+            .single();
+
+        if (userError || !userData) {
+            console.error('Erro ao obter dados do usuário:', userError);
+            showToast('Erro ao criar notificação. Tente novamente.', 'error');
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('notificacoes')
+            .insert([
+                {
+                    cidade_id: userData.cidade,
+                    titulo: title,
+                    descricao: description,
+                    imagem_url: isImage ? mediaUrl : null,
+                    video_url: !isImage ? mediaUrl : null,
+                    imagem_ou_video: isImage
+                }
+            ]);
+
+        if (error) {
+            console.error('Erro ao criar notificação:', error);
+            showToast('Erro ao criar notificação. Tente novamente.', 'error');
+            return;
+        }
+
+        showToast('Notificação criada com sucesso!', 'success');
+        setTimeout(() => {
+            window.location.href = '/gestor/notificacoes_gestor.html';
+        }, 1500);
+
+    } catch (error) {
+        console.error('Erro:', error);
+        showToast('Erro ao criar notificação. Tente novamente.', 'error');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Publicar';
+    }
+}
+
+async function loadCidadeInfo() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('cidade, cidades(nome)')
+            .eq('id', user.id)
+            .single();
+
+        if (error) throw error;
+
+        const cidadeInfo = document.getElementById('cidadeInfo');
+        cidadeInfo.textContent = data.cidades.nome;
+    } catch (error) {
+        console.error('Erro ao carregar informações da cidade:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadCidadeInfo();
+}); 

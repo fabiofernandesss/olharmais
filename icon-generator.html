@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Ícones PWA - OlharMais</title>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            color: #333;
+        }
+        h1 {
+            color: #005ae2;
+        }
+        .drop-area {
+            border: 3px dashed #ccc;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .drop-area:hover {
+            border-color: #005ae2;
+            background-color: #f0f7ff;
+        }
+        .logo-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 20px auto;
+            display: block;
+        }
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .icon-card {
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .icon-card img {
+            display: block;
+            margin: 0 auto 10px;
+            max-width: 100%;
+            height: auto;
+        }
+        .btn {
+            background-color: #005ae2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            background-color: #0048b3;
+        }
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gerador de Ícones PWA</h1>
+    <p>Esta ferramenta ajuda a gerar todos os ícones necessários para o PWA do OlharMais.</p>
+    
+    <div class="drop-area" id="dropArea">
+        <p>Arraste e solte uma imagem quadrada aqui<br>ou clique para selecionar</p>
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+    </div>
+    
+    <img id="logoPreview" class="logo-preview" style="display: none;">
+    
+    <div style="text-align: center; margin: 20px 0;">
+        <button id="generateBtn" class="btn" disabled>Gerar Todos os Ícones</button>
+        <button id="downloadBtn" class="btn" style="background-color: #4caf50; display: none;">Baixar Ícones</button>
+    </div>
+    
+    <div class="icon-grid" id="iconGrid"></div>
+    
+    <script>
+        // Elementos DOM
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const logoPreview = document.getElementById('logoPreview');
+        const generateBtn = document.getElementById('generateBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const iconGrid = document.getElementById('iconGrid');
+        
+        // Tamanhos de ícones a serem gerados
+        const iconSizes = [16, 32, 72, 96, 128, 144, 152, 192, 384, 512];
+        
+        // Eventos de arrastar e soltar
+        dropArea.addEventListener('click', () => fileInput.click());
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+        
+        dropArea.addEventListener('dragenter', () => dropArea.style.borderColor = '#005ae2');
+        dropArea.addEventListener('dragleave', () => dropArea.style.borderColor = '#ccc');
+        
+        dropArea.addEventListener('drop', (e) => {
+            dropArea.style.borderColor = '#ccc';
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                handleFile(fileInput.files[0]);
+            }
+        });
+        
+        // Função para lidar com o arquivo selecionado
+        function handleFile(file) {
+            if (!file.type.match('image.*')) {
+                alert('Por favor, selecione uma imagem.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                logoPreview.src = e.target.result;
+                logoPreview.style.display = 'block';
+                generateBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Gerar ícones
+        generateBtn.addEventListener('click', async () => {
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Gerando...';
+            iconGrid.innerHTML = '';
+            
+            // Limpar resultados anteriores
+            while (iconGrid.firstChild) {
+                iconGrid.removeChild(iconGrid.firstChild);
+            }
+            
+            for (const size of iconSizes) {
+                const icon = await generateIcon(logoPreview, size);
+                
+                const card = document.createElement('div');
+                card.className = 'icon-card';
+                
+                const img = document.createElement('img');
+                img.src = icon;
+                img.alt = `Ícone ${size}x${size}`;
+                img.dataset.size = size;
+                
+                const p = document.createElement('p');
+                p.textContent = `${size}x${size}`;
+                
+                const downloadLink = document.createElement('a');
+                downloadLink.href = icon;
+                downloadLink.download = `icon-${size}x${size}.png`;
+                downloadLink.className = 'btn';
+                downloadLink.style.padding = '6px 12px';
+                downloadLink.style.fontSize = '14px';
+                downloadLink.style.marginTop = '10px';
+                downloadLink.textContent = 'Baixar';
+                
+                card.appendChild(img);
+                card.appendChild(p);
+                card.appendChild(downloadLink);
+                iconGrid.appendChild(card);
+            }
+            
+            generateBtn.textContent = 'Gerar Novamente';
+            generateBtn.disabled = false;
+            downloadBtn.style.display = 'inline-block';
+        });
+        
+        // Função para gerar um ícone de tamanho específico
+        async function generateIcon(imgElement, size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Fundo circular com cor do OlharMais
+            ctx.fillStyle = '#005ae2';
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Borda branca
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = size / 20;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/2 - size/40, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Desenhar logo no centro com margem
+            const padding = size * 0.2;
+            ctx.drawImage(
+                imgElement, 
+                padding, 
+                padding, 
+                size - padding * 2, 
+                size - padding * 2
+            );
+            
+            return canvas.toDataURL('image/png');
+        }
+        
+        // Baixar todos os ícones como ZIP
+        downloadBtn.addEventListener('click', () => {
+            alert('Para baixar todos os ícones: Clique em cada botão "Baixar" ou salve as imagens uma a uma com o botão direito.');
+        });
+    </script>
+</body>
+</html> 
